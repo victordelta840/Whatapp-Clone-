@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WhatsApp — Offline</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif;
+        background: #efeae2;
+        color: #111b21;
+        padding: 24px;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #0b141a;
+          color: #e9edef;
+        }
+        .card {
+          background: #111b21 !important;
+          border-color: #222e35 !important;
+        }
+        .muted {
+          color: #8696a0 !important;
+        }
+      }
+      .card {
+        max-width: 420px;
+        width: 100%;
+        padding: 32px;
+        border-radius: 16px;
+        background: #ffffff;
+        border: 1px solid #e9edef;
+        text-align: center;
+      }
+      h1 {
+        font-size: 20px;
+        margin: 0 0 8px;
+      }
+      p {
+        font-size: 14px;
+        line-height: 1.5;
+        margin: 0 0 20px;
+      }
+      .muted {
+        color: #54656f;
+      }
+      button {
+        background: #00a884;
+        color: #ffffff;
+        border: none;
+        border-radius: 9999px;
+        padding: 10px 24px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>Phone or computer not connected</h1>
+      <p class="muted">
+        Make sure your device has an active Internet connection to load new messages and media, or
+        return to your cached chats.
+      </p>
+      <button type="button" onclick="window.location.href='/chats'">Retry</button>
+    </main>
+  </body>
+</html>

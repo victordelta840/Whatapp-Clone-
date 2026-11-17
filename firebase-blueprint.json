@@ -1,0 +1,332 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Publicly addressable user profile without PII",
+      "type": "object",
+      "properties": {
+        "schemaVersion": { "type": "number" },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "displayNameLower": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "username": { "type": "string", "minLength": 3, "maxLength": 30, "pattern": "^[a-z0-9_.]{3,30}$" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["schemaVersion", "displayName", "displayNameLower", "createdAt", "updatedAt"]
+    },
+    "RestrictedPhoto": {
+      "title": "RestrictedPhoto",
+      "description": "Privacy-gated user profile photo metadata",
+      "type": "object",
+      "properties": {
+        "schemaVersion": { "type": "number" },
+        "photoPath": { "type": "string", "maxLength": 300 },
+        "photoURL": { "type": "string", "maxLength": 2048 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["schemaVersion", "updatedAt"]
+    },
+    "RestrictedAbout": {
+      "title": "RestrictedAbout",
+      "description": "Privacy-gated user about bio text",
+      "type": "object",
+      "properties": {
+        "schemaVersion": { "type": "number" },
+        "text": { "type": "string", "maxLength": 139 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["schemaVersion", "text", "updatedAt"]
+    },
+    "PrivateAccount": {
+      "title": "PrivateAccount",
+      "description": "Owner-only PII account record written by Cloud Functions",
+      "type": "object",
+      "properties": {
+        "schemaVersion": { "type": "number" },
+        "email": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "providers": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["schemaVersion", "providers", "createdAt"]
+    },
+    "UserSettings": {
+      "title": "UserSettings",
+      "description": "Owner privacy, notification, theme, and locale preferences",
+      "type": "object",
+      "properties": {
+        "schemaVersion": { "type": "number" },
+        "privacy": { "type": "object" },
+        "notifications": { "type": "object" },
+        "mutedStatusAuthors": { "type": "array" },
+        "theme": { "type": "string", "enum": ["light", "dark", "system"] },
+        "locale": { "type": "string", "maxLength": 16 }
+      },
+      "required": ["schemaVersion", "privacy", "notifications", "theme", "locale"]
+    },
+    "Contact": {
+      "title": "Contact",
+      "description": "User-saved contact reference",
+      "type": "object",
+      "properties": {
+        "schemaVersion": { "type": "number" },
+        "addedAt": { "type": "string", "format": "date-time" },
+        "source": { "type": "string", "enum": ["manual", "discovery", "invite", "contactPicker"] },
+        "nickname": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["schemaVersion", "addedAt", "source"]
+    },
+    "Block": {
+      "title": "Block",
+      "description": "Blocked user entry",
+      "type": "object",
+      "properties": {
+        "schemaVersion": { "type": "number" },
+        "blockedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["schemaVersion", "blockedAt"]
+    },
+    "Device": {
+      "title": "Device",
+      "description": "Registered FCM Web Push device record",
+      "type": "object",
+      "properties": {
+        "schemaVersion": { "type": "number" },
+        "fcmToken": { "type": "string", "maxLength": 512 },
+        "platform": { "type": "string", "maxLength": 64 },
+        "appVersion": { "type": "string", "maxLength": 32 },
+        "userAgentSummary": { "type": "string", "maxLength": 160 },
+        "notificationsEnabled": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lastSeenAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["schemaVersion", "platform", "notificationsEnabled", "createdAt", "lastSeenAt"]
+    },
+    "NotificationItem": {
+      "title": "NotificationItem",
+      "description": "In-app notification document created by Cloud Functions",
+      "type": "object",
+      "properties": {
+        "schemaVersion": { "type": "number" },
+        "type": { "type": "string", "enum": ["message", "mention", "groupAdded", "groupInvite", "missedCall", "statusReply", "system"] },
+        "title": { "type": "string", "maxLength": 120 },
+        "body": { "type": "string", "maxLength": 240 },
+        "data": { "type": "object" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["schemaVersion", "type", "title", "body", "read", "createdAt"]
+    },
+    "ChatState": {
+      "title": "ChatState",
+      "description": "Per-user conversation UI and unread state",
+      "type": "object",
+      "properties": {
+        "schemaVersion": { "type": "number" },
+        "pinned": { "type": "boolean" },
+        "pinnedAt": { "type": "string", "format": "date-time" },
+        "archived": { "type": "boolean" },
+        "mutedUntil": { "type": "string", "format": "date-time" },
+        "unreadCount": { "type": "number" },
+        "markedUnread": { "type": "boolean" },
+        "clearedAt": { "type": "string", "format": "date-time" },
+        "lastOpenedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["schemaVersion", "pinned", "archived", "unreadCount", "markedUnread"]
+    },
+    "Presence": {
+      "title": "Presence",
+      "description": "Heartbeat-based online/last-seen presence document",
+      "type": "object",
+      "properties": {
+        "schemaVersion": { "type": "number" },
+        "state": { "type": "string", "enum": ["online", "offline"] },
+        "lastActiveAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["schemaVersion", "state", "lastActiveAt", "updatedAt"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "Direct or group conversation container",
+      "type": "object",
+      "properties": {
+        "schemaVersion": { "type": "number" },
+        "type": { "type": "string", "enum": ["direct", "group"] },
+        "participantIds": { "type": "array" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "lastMessage": { "type": "object" },
+        "lastMessageAt": { "type": "string", "format": "date-time" },
+        "group": { "type": "object" }
+      },
+      "required": ["schemaVersion", "type", "participantIds", "createdBy", "createdAt", "updatedAt"]
+    },
+    "ConversationMember": {
+      "title": "ConversationMember",
+      "description": "Conversation membership role and high-water receipt pointers",
+      "type": "object",
+      "properties": {
+        "schemaVersion": { "type": "number" },
+        "role": { "type": "string", "enum": ["owner", "admin", "member"] },
+        "joinedAt": { "type": "string", "format": "date-time" },
+        "addedBy": { "type": "string" },
+        "lastDeliveredAt": { "type": "string", "format": "date-time" },
+        "lastReadAt": { "type": "string", "format": "date-time" },
+        "lastReadMessageId": { "type": "string" }
+      },
+      "required": ["schemaVersion", "role", "joinedAt", "addedBy"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Conversation message with media, reply, reactions, and soft-delete state",
+      "type": "object",
+      "properties": {
+        "schemaVersion": { "type": "number" },
+        "senderId": { "type": "string" },
+        "type": { "type": "string", "enum": ["text", "image", "video", "audio", "voice", "document", "system"] },
+        "text": { "type": "string", "maxLength": 4096 },
+        "media": { "type": "object" },
+        "replyTo": { "type": "object" },
+        "forwarded": { "type": "boolean" },
+        "mentions": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "editedAt": { "type": "string", "format": "date-time" },
+        "deletedForEveryone": { "type": "boolean" },
+        "deletedAt": { "type": "string", "format": "date-time" },
+        "reactions": { "type": "object" }
+      },
+      "required": ["schemaVersion", "senderId", "type", "forwarded", "mentions", "createdAt", "deletedForEveryone", "reactions"]
+    },
+    "StatusUpdate": {
+      "title": "StatusUpdate",
+      "description": "24-hour expiring status update",
+      "type": "object",
+      "properties": {
+        "schemaVersion": { "type": "number" },
+        "authorId": { "type": "string" },
+        "type": { "type": "string", "enum": ["text", "image", "video"] },
+        "text": { "type": "string", "maxLength": 700 },
+        "backgroundColor": { "type": "string", "maxLength": 32 },
+        "fontStyle": { "type": "string", "maxLength": 32 },
+        "media": { "type": "object" },
+        "caption": { "type": "string", "maxLength": 700 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "string", "format": "date-time" },
+        "deleteAt": { "type": "string", "format": "date-time" },
+        "viewerIds": { "type": "array" },
+        "viewCount": { "type": "number" }
+      },
+      "required": ["schemaVersion", "authorId", "type", "createdAt", "expiresAt", "deleteAt", "viewerIds", "viewCount"]
+    },
+    "Call": {
+      "title": "Call",
+      "description": "One-to-one WebRTC call state machine document",
+      "type": "object",
+      "properties": {
+        "schemaVersion": { "type": "number" },
+        "conversationId": { "type": "string" },
+        "callerId": { "type": "string" },
+        "calleeId": { "type": "string" },
+        "participantIds": { "type": "array" },
+        "type": { "type": "string", "enum": ["audio", "video"] },
+        "state": { "type": "string", "enum": ["ringing", "accepted", "declined", "busy", "cancelled", "missed", "ended", "failed"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "answeredAt": { "type": "string", "format": "date-time" },
+        "endedAt": { "type": "string", "format": "date-time" },
+        "endedBy": { "type": "string" },
+        "endReason": { "type": "string" },
+        "durationSec": { "type": "number" }
+      },
+      "required": ["schemaVersion", "conversationId", "callerId", "calleeId", "participantIds", "type", "state", "createdAt"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "Abuse report submitted by a signed-in user",
+      "type": "object",
+      "properties": {
+        "schemaVersion": { "type": "number" },
+        "reporterId": { "type": "string" },
+        "targetType": { "type": "string", "enum": ["user", "message", "group", "status"] },
+        "targetId": { "type": "string", "maxLength": 128 },
+        "conversationId": { "type": "string", "maxLength": 128 },
+        "reason": { "type": "string", "enum": ["spam", "harassment", "hate", "violence", "sexual", "scam", "other"] },
+        "details": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["open"] }
+      },
+      "required": ["schemaVersion", "reporterId", "targetType", "targetId", "reason", "details", "createdAt", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Publicly addressable user profile without PII"
+    },
+    "/users/{uid}/restricted/photo": {
+      "schema": { "$ref": "#/entities/RestrictedPhoto" },
+      "description": "Privacy-gated user photo"
+    },
+    "/users/{uid}/restricted/about": {
+      "schema": { "$ref": "#/entities/RestrictedAbout" },
+      "description": "Privacy-gated user bio"
+    },
+    "/users/{uid}/private/account": {
+      "schema": { "$ref": "#/entities/PrivateAccount" },
+      "description": "Owner-only PII account document"
+    },
+    "/users/{uid}/private/settings": {
+      "schema": { "$ref": "#/entities/UserSettings" },
+      "description": "Owner privacy and app settings"
+    },
+    "/users/{uid}/contacts/{contactUid}": {
+      "schema": { "$ref": "#/entities/Contact" },
+      "description": "User contacts"
+    },
+    "/users/{uid}/blocks/{blockedUid}": {
+      "schema": { "$ref": "#/entities/Block" },
+      "description": "User block list"
+    },
+    "/users/{uid}/devices/{deviceId}": {
+      "schema": { "$ref": "#/entities/Device" },
+      "description": "User FCM push devices"
+    },
+    "/users/{uid}/notifications/{nid}": {
+      "schema": { "$ref": "#/entities/NotificationItem" },
+      "description": "User notification center entries"
+    },
+    "/users/{uid}/chatStates/{cid}": {
+      "schema": { "$ref": "#/entities/ChatState" },
+      "description": "Per-user chat states"
+    },
+    "/presence/{uid}": {
+      "schema": { "$ref": "#/entities/Presence" },
+      "description": "User presence heartbeat"
+    },
+    "/conversations/{cid}": {
+      "schema": { "$ref": "#/entities/Conversation" },
+      "description": "Direct and group conversations"
+    },
+    "/conversations/{cid}/members/{uid}": {
+      "schema": { "$ref": "#/entities/ConversationMember" },
+      "description": "Conversation members and receipt pointers"
+    },
+    "/conversations/{cid}/messages/{mid}": {
+      "schema": { "$ref": "#/entities/Message" },
+      "description": "Conversation messages"
+    },
+    "/statuses/{sid}": {
+      "schema": { "$ref": "#/entities/StatusUpdate" },
+      "description": "Expiring 24h statuses"
+    },
+    "/calls/{callId}": {
+      "schema": { "$ref": "#/entities/Call" },
+      "description": "One-to-one call state"
+    },
+    "/reports/{rid}": {
+      "schema": { "$ref": "#/entities/Report" },
+      "description": "Abuse reports"
+    }
+  }
+}

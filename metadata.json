@@ -1,0 +1,6 @@
+{
+  "name": "Converse",
+  "description": "Cross-platform real-time messaging PWA with direct and group chats, media sharing, status updates, and one-to-one audio/video calling.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

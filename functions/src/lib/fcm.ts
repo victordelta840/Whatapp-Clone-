@@ -1,0 +1,109 @@
+import { getFirestore } from 'firebase-admin/firestore';
+import { getMessaging } from 'firebase-admin/messaging';
+
+export interface SendPushOptions {
+  recipientUid: string;
+  category: 'messages' | 'groups' | 'calls' | 'statusUpdates';
+  conversationId?: string;
+  callId?: string;
+  title: string;
+  body: string;
+  tag: string;
+  data?: Record<string, string>;
+  highPriority?: boolean;
+}
+
+export async function sendPushToUser(opts: SendPushOptions): Promise<void> {
+  const db = getFirestore();
+  const userRef = db.collection('users').doc(opts.recipientUid);
+
+  const [settingsSnap, chatStateSnap, devicesSnap] = await Promise.all([
+    userRef.collection('private').doc('settings').get(),
+    opts.conversationId
+      ? userRef.collection('chatStates').doc(opts.conversationId).get()
+      : Promise.resolve(null),
+    userRef.collection('devices').where('notificationsEnabled', '==', true).get(),
+  ]);
+
+  if (devicesSnap.empty) return;
+
+  const settings = settingsSnap.data() as
+    | {
+        notifications?: {
+          messages?: boolean;
+          groups?: boolean;
+          calls?: boolean;
+          statusUpdates?: boolean;
+          showPreviews?: boolean;
+        };
+      }
+    | undefined;
+
+  const notifPrefs = settings?.notifications;
+  if (notifPrefs && notifPrefs[opts.category] === false) {
+    return;
+  }
+
+  if (chatStateSnap?.exists) {
+    const mutedUntil = chatStateSnap.data()?.mutedUntil?.toMillis?.() as number | undefined;
+    if (mutedUntil && mutedUntil > Date.now()) {
+      return;
+    }
+  }
+
+  const showPreviews = notifPrefs?.showPreviews !== false;
+  const resolvedBody = showPreviews ? opts.body : 'New activity on Converse';
+  const messaging = getMessaging();
+
+  const tokens: Array<{ docId: string; token: string }> = [];
+  for (const doc of devicesSnap.docs) {
+    const token = doc.data()?.fcmToken as string | undefined;
+    if (token) tokens.push({ docId: doc.id, token });
+  }
+  if (tokens.length === 0) return;
+
+  const response = await messaging.sendEachForMulticast({
+    tokens: tokens.map((t) => t.token),
+    notification: {
+      title: opts.title,
+      body: resolvedBody,
+    },
+    data: {
+      ...(opts.data ?? {}),
+      title: opts.title,
+      body: resolvedBody,
+      tag: opts.tag,
+    },
+    webpush: {
+      headers: {
+        Urgency: opts.highPriority ? 'high' : 'normal',
+      },
+      notification: {
+        tag: opts.tag,
+        renotify: Boolean(opts.highPriority),
+      },
+    },
+  });
+
+  // Clean up invalid registration tokens immediately
+  const batch = db.batch();
+  let hasDeletes = false;
+  response.responses.forEach((res, idx) => {
+    if (!res.success && res.error) {
+      const code = res.error.code;
+      if (
+        code === 'messaging/registration-token-not-registered' ||
+        code === 'messaging/invalid-registration-token'
+      ) {
+        const entry = tokens[idx];
+        if (entry) {
+          batch.delete(userRef.collection('devices').doc(entry.docId));
+          hasDeletes = true;
+        }
+      }
+    }
+  });
+  if (hasDeletes) {
+    await batch.commit();
+  }
+}

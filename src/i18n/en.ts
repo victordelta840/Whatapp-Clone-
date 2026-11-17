@@ -1,0 +1,61 @@
+export const en = {
+  app: {
+    name: 'WhatsApp',
+    tagline: 'Simple. Reliable. Real-time messaging and calling.',
+    offlineBanner: 'Phone or computer not connected. Messages will send when you reconnect.',
+    connectingBanner: 'Connecting...',
+    updateAvailable: 'A new version of WhatsApp is ready.',
+    reloadUpdate: 'Update now',
+  },
+  nav: {
+    chats: 'Chats',
+    status: 'Status',
+    calls: 'Calls',
+    notifications: 'Notifications',
+    settings: 'Settings',
+    newChat: 'New chat',
+    diagnostics: 'Diagnostics',
+    platformNotes: 'Platform notes',
+  },
+  auth: {
+    signInTitle: 'Enter your phone number',
+    verifyOtpTitle: 'Verify your number',
+    phoneSubtitle: 'WhatsApp will send an SMS message to verify your phone number. Carrier charges may apply.',
+    sendCode: 'Next',
+    verifyCode: 'Verify',
+    resendCode: 'Resend SMS',
+    wrongNumber: 'Wrong number?',
+  },
+  chats: {
+    searchPlaceholder: 'Search or start a new chat',
+    searchScopeNotice: 'Message search covers messages synced to this device.',
+    emptyTitle: 'No chats yet',
+    emptyDescription: 'Start a new chat or create a group with people you know.',
+    startChatCta: 'Start a new chat',
+    selectConversationTitle: 'WhatsApp Web',
+    selectConversationDescription:
+      'Send and receive messages, voice notes, photos, status updates, and 1:1 audio or video calls in real time across your devices.',
+    typeMessage: 'Type a message',
+    send: 'Send',
+  },
+  status: {
+    myStatus: 'My status',
+    recentUpdates: 'Recent updates',
+    viewedUpdates: 'Viewed updates',
+    mutedUpdates: 'Muted updates',
+    emptyTitle: 'No active status updates',
+    emptyDescription: 'Share a text, photo, or 30-second video update that disappears after 24 hours.',
+  },
+  calls: {
+    emptyTitle: 'No recent calls',
+    emptyDescription: 'Place one-to-one audio or video calls from any direct chat.',
+    webRingLimitNotice:
+      'Background ringing is limited on the web. When the app is closed, incoming calls arrive as notifications.',
+  },
+  errors: {
+    notFoundTitle: 'Page not found',
+    notFoundDescription: 'The link you followed does not match any active route.',
+    backToChats: 'Back to Chats',
+    retry: 'Retry',
+  },
+} as const;

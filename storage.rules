@@ -1,0 +1,101 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isBlockedExecutable(name, contentType) {
+      return name.matches('.*\\.(exe|msi|bat|cmd|com|scr|pif|sh|bash|zsh|ps1|vbs|vbe|js|jse|wsf|wsh|jar|apk|ipa|dmg|pkg|deb|rpm|app|dll|so|dylib)$') ||
+        contentType in [
+          'application/x-msdownload',
+          'application/x-msdos-program',
+          'application/x-executable',
+          'application/x-sh',
+          'application/x-shellscript',
+          'application/x-bat',
+          'application/java-archive',
+          'application/vnd.android.package-archive'
+        ];
+    }
+
+    match /profilePhotos/{uid}/{fileName} {
+      allow read: if signedIn() && (
+        isOwner(uid) ||
+        !firestore.exists(/databases/(default)/documents/users/$(uid)/private/settings) ||
+        firestore.get(/databases/(default)/documents/users/$(uid)/private/settings).data.privacy.profilePhoto == 'everyone' ||
+        (
+          firestore.get(/databases/(default)/documents/users/$(uid)/private/settings).data.privacy.profilePhoto == 'contacts' &&
+          firestore.exists(/databases/(default)/documents/users/$(uid)/contacts/$(request.auth.uid))
+        )
+      );
+      allow write: if isOwner(uid) &&
+        request.resource != null &&
+        request.resource.size <= 5 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/(jpeg|png|webp|gif)');
+    }
+
+    match /groupPhotos/{cid}/{fileName} {
+      allow read: if signedIn() &&
+        firestore.exists(/databases/(default)/documents/conversations/$(cid)/members/$(request.auth.uid));
+      allow write: if signedIn() &&
+        firestore.exists(/databases/(default)/documents/conversations/$(cid)/members/$(request.auth.uid)) &&
+        (
+          firestore.get(/databases/(default)/documents/conversations/$(cid)).data.group.settings.editInfo == 'all' ||
+          firestore.get(/databases/(default)/documents/conversations/$(cid)/members/$(request.auth.uid)).data.role in ['owner', 'admin']
+        ) &&
+        request.resource != null &&
+        request.resource.size <= 5 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/(jpeg|png|webp|gif)');
+    }
+
+    match /chatMedia/{cid}/{senderUid}/{messageId}/{fileName} {
+      allow read: if signedIn() &&
+        firestore.exists(/databases/(default)/documents/conversations/$(cid)/members/$(request.auth.uid));
+      allow create: if isOwner(senderUid) &&
+        firestore.exists(/databases/(default)/documents/conversations/$(cid)/members/$(request.auth.uid)) &&
+        request.resource != null &&
+        !isBlockedExecutable(fileName.lower(), request.resource.contentType) &&
+        (
+          (fileName == 'thumb' && request.resource.size <= 200 * 1024 && request.resource.contentType.matches('image/(jpeg|png|webp)')) ||
+          (request.resource.contentType.matches('image/(jpeg|png|webp|gif)') && request.resource.size <= 10 * 1024 * 1024) ||
+          (request.resource.contentType.matches('video/(mp4|webm|quicktime)') && request.resource.size <= 64 * 1024 * 1024) ||
+          (request.resource.contentType.matches('audio/(webm|mp4|ogg|mpeg|aac)') && request.resource.size <= 16 * 1024 * 1024) ||
+          (!request.resource.contentType.matches('(image|video|audio)/.*') && request.resource.size <= 50 * 1024 * 1024)
+        );
+      allow update, delete: if false;
+    }
+
+    match /statusMedia/{uid}/{statusId}/{fileName} {
+      allow read: if signedIn() && (
+        isOwner(uid) ||
+        (
+          firestore.exists(/databases/(default)/documents/statuses/$(statusId)) &&
+          request.auth.uid in firestore.get(/databases/(default)/documents/statuses/$(statusId)).data.viewerIds &&
+          firestore.get(/databases/(default)/documents/statuses/$(statusId)).data.expiresAt > request.time
+        )
+      );
+      allow create: if isOwner(uid) &&
+        request.resource != null &&
+        (
+          (request.resource.contentType.matches('image/(jpeg|png|webp|gif)') && request.resource.size <= 10 * 1024 * 1024) ||
+          (request.resource.contentType.matches('video/(mp4|webm|quicktime)') && request.resource.size <= 64 * 1024 * 1024)
+        );
+      allow delete: if isOwner(uid);
+      allow update: if false;
+    }
+
+    match /exports/{uid}/{fileName} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+  }
+}
