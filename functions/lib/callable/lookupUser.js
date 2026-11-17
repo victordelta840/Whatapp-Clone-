@@ -1,8 +1,8 @@
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
 import { onCall } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 import { FUNCTIONS_REGION, RATE_LIMITS } from '../lib/constants.js';
+import { getDb } from '../lib/db.js';
 import { parseInput, requireAuth } from '../lib/errors.js';
 import { enforceRateLimit } from '../lib/rateLimit.js';
 const lookupSchema = z.object({
@@ -13,7 +13,7 @@ export const lookupUser = onCall({ region: FUNCTIONS_REGION, enforceAppCheck: tr
     const callerUid = requireAuth(request);
     const input = parseInput(lookupSchema, request.data);
     await enforceRateLimit(callerUid, 'lookupUser', RATE_LIMITS.LOOKUP_USER.limit, RATE_LIMITS.LOOKUP_USER.windowSec);
-    const db = getFirestore();
+    const db = getDb();
     let targetUid = null;
     if (input.kind === 'username') {
         const normalized = input.value.toLowerCase().replace(/^@/, '');

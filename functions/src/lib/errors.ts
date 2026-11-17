@@ -16,7 +16,7 @@ export function requireVerifiedEmailOrProvider(request: CallableRequest<unknown>
   if (provider !== 'google.com' && provider !== 'phone' && !verified) {
     throw new HttpsError(
       'permission-denied',
-      'Verify your email address before performing this action.',
+      'Verify your phone number before performing this action.',
     );
   }
   return uid;

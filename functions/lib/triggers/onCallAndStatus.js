@@ -1,21 +1,22 @@
 import { randomUUID } from 'node:crypto';
-import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { onObjectFinalized } from 'firebase-functions/v2/storage';
 import { defineSecret } from 'firebase-functions/params';
 import { FUNCTIONS_REGION } from '../lib/constants.js';
+import { FIRESTORE_DATABASE_ID, getDb } from '../lib/db.js';
 import { sendPushToUser } from '../lib/fcm.js';
 import { hashE164Phone } from '../callable/statusAndContacts.js';
 const phoneHashPepper = defineSecret('PHONE_HASH_PEPPER');
-export const onCallCreated = onDocumentCreated({ region: FUNCTIONS_REGION, document: 'calls/{callId}' }, async (event) => {
+export const onCallCreated = onDocumentCreated({ region: FUNCTIONS_REGION, database: FIRESTORE_DATABASE_ID, document: 'calls/{callId}' }, async (event) => {
     const snap = event.data;
     if (!snap)
         return;
     const call = snap.data();
     if (call.state !== 'ringing')
         return;
-    const db = getFirestore();
+    const db = getDb();
     const callerSnap = await db.collection('users').doc(call.callerId).get();
     const callerName = callerSnap.data()?.displayName ?? 'Someone';
     await sendPushToUser({
@@ -34,7 +35,7 @@ export const onCallCreated = onDocumentCreated({ region: FUNCTIONS_REGION, docum
         },
     });
 });
-export const onCallUpdated = onDocumentUpdated({ region: FUNCTIONS_REGION, document: 'calls/{callId}' }, async (event) => {
+export const onCallUpdated = onDocumentUpdated({ region: FUNCTIONS_REGION, database: FIRESTORE_DATABASE_ID, document: 'calls/{callId}' }, async (event) => {
     const before = event.data?.before.data();
     const after = event.data?.after.data();
     if (!before || !after || before.state === after.state)
@@ -42,7 +43,7 @@ export const onCallUpdated = onDocumentUpdated({ region: FUNCTIONS_REGION, docum
     const terminalStates = new Set(['declined', 'busy', 'cancelled', 'missed', 'ended', 'failed']);
     if (!after.state || !terminalStates.has(after.state))
         return;
-    const db = getFirestore();
+    const db = getDb();
     const { callId } = event.params;
     if (after.answeredAt && after.endedAt && after.durationSec == null) {
         const durationSec = Math.max(0, Math.round((after.endedAt.toMillis() - after.answeredAt.toMillis()) / 1000));
@@ -119,17 +120,17 @@ export const onCallUpdated = onDocumentUpdated({ region: FUNCTIONS_REGION, docum
         await batch.commit();
     }
 });
-export const onStatusViewCreated = onDocumentCreated({ region: FUNCTIONS_REGION, document: 'statuses/{sid}/views/{viewerUid}' }, async (event) => {
-    const db = getFirestore();
+export const onStatusViewCreated = onDocumentCreated({ region: FUNCTIONS_REGION, database: FIRESTORE_DATABASE_ID, document: 'statuses/{sid}/views/{viewerUid}' }, async (event) => {
+    const db = getDb();
     await db
         .collection('statuses')
         .doc(event.params.sid)
         .update({ viewCount: FieldValue.increment(1) })
         .catch(() => undefined);
 });
-export const onBlockCreated = onDocumentCreated({ region: FUNCTIONS_REGION, document: 'users/{uid}/blocks/{blockedUid}' }, async (event) => {
+export const onBlockCreated = onDocumentCreated({ region: FUNCTIONS_REGION, database: FIRESTORE_DATABASE_ID, document: 'users/{uid}/blocks/{blockedUid}' }, async (event) => {
     const { uid, blockedUid } = event.params;
-    const db = getFirestore();
+    const db = getDb();
     // Remove each party from the other's active status audiences
     const [aStatuses, bStatuses] = await Promise.all([
         db.collection('statuses').where('authorId', '==', uid).get(),
@@ -144,14 +145,14 @@ export const onBlockCreated = onDocumentCreated({ region: FUNCTIONS_REGION, docu
     }
     await batch.commit();
 });
-export const onReportCreated = onDocumentCreated({ region: FUNCTIONS_REGION, document: 'reports/{rid}' }, async (event) => {
+export const onReportCreated = onDocumentCreated({ region: FUNCTIONS_REGION, database: FIRESTORE_DATABASE_ID, document: 'reports/{rid}' }, async (event) => {
     const snap = event.data;
     if (!snap)
         return;
     const report = snap.data();
     if (!report.conversationId)
         return;
-    const db = getFirestore();
+    const db = getDb();
     const recentMsgs = await db
         .collection('conversations')
         .doc(report.conversationId)
@@ -170,6 +171,7 @@ export const onReportCreated = onDocumentCreated({ region: FUNCTIONS_REGION, doc
 });
 export const onSettingsUpdated = onDocumentUpdated({
     region: FUNCTIONS_REGION,
+    database: FIRESTORE_DATABASE_ID,
     document: 'users/{uid}/private/settings',
     secrets: [phoneHashPepper],
 }, async (event) => {
@@ -178,7 +180,7 @@ export const onSettingsUpdated = onDocumentUpdated({
     const afterFindable = event.data?.after.data()?.privacy?.findableByPhone;
     if (beforeFindable === afterFindable)
         return;
-    const db = getFirestore();
+    const db = getDb();
     const accountSnap = await db.collection('users').doc(uid).collection('private').doc('account').get();
     const phone = accountSnap.data()?.phoneNumber;
     if (!phone)

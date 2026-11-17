@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 import { FUNCTIONS_REGION, LIMITS, RATE_LIMITS } from '../lib/constants.js';
+import { getDb } from '../lib/db.js';
 import { parseInput, requireVerifiedEmailOrProvider } from '../lib/errors.js';
 import { enforceRateLimit } from '../lib/rateLimit.js';
 
@@ -27,7 +28,7 @@ export const startDirectChat = onCall(
       RATE_LIMITS.START_DIRECT_CHAT.windowSec,
     );
 
-    const db = getFirestore();
+    const db = getDb();
     const [targetSnap, targetBlockSnap, callerBlockSnap] = await Promise.all([
       db.collection('users').doc(input.targetUid).get(),
       db.collection('users').doc(input.targetUid).collection('blocks').doc(callerUid).get(),
@@ -110,7 +111,7 @@ export const forwardMessages = onCall(
       RATE_LIMITS.FORWARD_MESSAGES.windowSec,
     );
 
-    const db = getFirestore();
+    const db = getDb();
     const sourceMember = await db
       .collection('conversations')
       .doc(input.sourceConversationId)

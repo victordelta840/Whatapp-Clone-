@@ -1,12 +1,14 @@
-import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { FUNCTIONS_REGION, RATE_LIMITS } from '../lib/constants.js';
+import { FIRESTORE_DATABASE_ID, getDb } from '../lib/db.js';
 import { sendPushToUser } from '../lib/fcm.js';
 
 export const onMessageCreated = onDocumentCreated(
   {
     region: FUNCTIONS_REGION,
+    database: FIRESTORE_DATABASE_ID,
     document: 'conversations/{cid}/messages/{mid}',
   },
   async (event) => {
@@ -19,7 +21,7 @@ export const onMessageCreated = onDocumentCreated(
       mentions?: string[];
     };
     const { cid, mid } = event.params;
-    const db = getFirestore();
+    const db = getDb();
 
     const convSnap = await db.collection('conversations').doc(cid).get();
     if (!convSnap.exists) return;
@@ -149,6 +151,7 @@ export const onMessageCreated = onDocumentCreated(
 export const onMessageUpdated = onDocumentUpdated(
   {
     region: FUNCTIONS_REGION,
+    database: FIRESTORE_DATABASE_ID,
     document: 'conversations/{cid}/messages/{mid}',
   },
   async (event) => {
@@ -169,7 +172,7 @@ export const onMessageUpdated = onDocumentUpdated(
     if (!before || !after) return;
 
     const { cid, mid } = event.params;
-    const db = getFirestore();
+    const db = getDb();
     const convRef = db.collection('conversations').doc(cid);
 
     if (!before.deletedForEveryone && after.deletedForEveryone) {

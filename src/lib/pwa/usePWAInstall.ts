@@ -22,10 +22,12 @@ export function usePWAInstall() {
       : false,
   );
 
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const isAndroid = /android/i.test(ua);
   const isIosSafari =
-    typeof navigator !== 'undefined' &&
-    /iphone|ipad|ipod/i.test(navigator.userAgent) &&
-    !/crios|fxios|edgios/i.test(navigator.userAgent);
+    /iphone|ipad|ipod/i.test(ua) && !/crios|fxios|edgios/i.test(ua);
+  const isEmbedded =
+    typeof window !== 'undefined' ? window.self !== window.top : false;
 
   useEffect(() => {
     const onBeforeInstall = (e: Event) => {
@@ -63,9 +65,14 @@ export function usePWAInstall() {
   };
 
   return {
-    canPromptInstall: Boolean(deferredPrompt) && !isStandalone && !dismissed,
-    showIosHint: isIosSafari && !isStandalone && !dismissed && !deferredPrompt,
+    isAndroid,
+    isIosSafari,
+    isEmbedded,
     isStandalone,
+    hasNativePrompt: Boolean(deferredPrompt),
+    canPromptInstall: Boolean(deferredPrompt) && !isStandalone && !dismissed,
+    showAndroidManualHint: isAndroid && !isStandalone && !dismissed && !deferredPrompt,
+    showIosHint: isIosSafari && !isStandalone && !dismissed && !deferredPrompt,
     triggerInstall,
     dismiss,
   };

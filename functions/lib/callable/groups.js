@@ -1,12 +1,13 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 import { FUNCTIONS_REGION, LIMITS, RATE_LIMITS } from '../lib/constants.js';
+import { getDb } from '../lib/db.js';
 import { parseInput, requireAuth, requireVerifiedEmailOrProvider } from '../lib/errors.js';
 import { enforceRateLimit } from '../lib/rateLimit.js';
 async function writeGroupSystemMessage(cid, kind, actorUid, targetUids, text) {
-    const db = getFirestore();
+    const db = getDb();
     const mid = randomUUID();
     const batch = db.batch();
     batch.set(db.collection('conversations').doc(cid).collection('messages').doc(mid), {
@@ -52,7 +53,7 @@ export const createGroup = onCall({ region: FUNCTIONS_REGION, enforceAppCheck: t
     const callerUid = requireVerifiedEmailOrProvider(request);
     const input = parseInput(createGroupSchema, request.data);
     await enforceRateLimit(callerUid, 'createGroup', RATE_LIMITS.CREATE_GROUP.limit, RATE_LIMITS.CREATE_GROUP.windowSec);
-    const db = getFirestore();
+    const db = getDb();
     const uniqueTargets = Array.from(new Set(input.memberUids.filter((u) => u !== callerUid)));
     const eligibleUids = [callerUid];
     for (const targetUid of uniqueTargets) {
@@ -135,7 +136,7 @@ const updateGroupInfoSchema = z.object({
 export const updateGroupInfo = onCall({ region: FUNCTIONS_REGION, enforceAppCheck: true }, async (request) => {
     const uid = requireAuth(request);
     const input = parseInput(updateGroupInfoSchema, request.data);
-    const db = getFirestore();
+    const db = getDb();
     const convRef = db.collection('conversations').doc(input.conversationId);
     const [convSnap, memberSnap] = await Promise.all([
         convRef.get(),
@@ -177,7 +178,7 @@ const updateGroupSettingsSchema = z.object({
 export const updateGroupSettings = onCall({ region: FUNCTIONS_REGION, enforceAppCheck: true }, async (request) => {
     const uid = requireAuth(request);
     const input = parseInput(updateGroupSettingsSchema, request.data);
-    const db = getFirestore();
+    const db = getDb();
     const convRef = db.collection('conversations').doc(input.conversationId);
     const memberSnap = await convRef.collection('members').doc(uid).get();
     if (!memberSnap.exists || !['owner', 'admin'].includes(String(memberSnap.data()?.role))) {
@@ -203,7 +204,7 @@ const addMembersSchema = z.object({
 export const addGroupMembers = onCall({ region: FUNCTIONS_REGION, enforceAppCheck: true }, async (request) => {
     const callerUid = requireAuth(request);
     const input = parseInput(addMembersSchema, request.data);
-    const db = getFirestore();
+    const db = getDb();
     const convRef = db.collection('conversations').doc(input.conversationId);
     const [convSnap, callerMemberSnap] = await Promise.all([
         convRef.get(),
@@ -278,7 +279,7 @@ const removeMemberSchema = z.object({
 export const removeGroupMember = onCall({ region: FUNCTIONS_REGION, enforceAppCheck: true }, async (request) => {
     const callerUid = requireAuth(request);
     const input = parseInput(removeMemberSchema, request.data);
-    const db = getFirestore();
+    const db = getDb();
     const convRef = db.collection('conversations').doc(input.conversationId);
     const [convSnap, callerSnap, targetSnap] = await Promise.all([
         convRef.get(),
@@ -313,7 +314,7 @@ const setRoleSchema = z.object({
 export const setGroupRole = onCall({ region: FUNCTIONS_REGION, enforceAppCheck: true }, async (request) => {
     const callerUid = requireAuth(request);
     const input = parseInput(setRoleSchema, request.data);
-    const db = getFirestore();
+    const db = getDb();
     const convRef = db.collection('conversations').doc(input.conversationId);
     const [callerSnap, targetSnap] = await Promise.all([
         convRef.collection('members').doc(callerUid).get(),
@@ -338,7 +339,7 @@ const leaveGroupSchema = z.object({
 export const leaveGroup = onCall({ region: FUNCTIONS_REGION, enforceAppCheck: true }, async (request) => {
     const uid = requireAuth(request);
     const input = parseInput(leaveGroupSchema, request.data);
-    const db = getFirestore();
+    const db = getDb();
     const convRef = db.collection('conversations').doc(input.conversationId);
     let deletedGroup = false;
     await db.runTransaction(async (tx) => {
@@ -386,7 +387,7 @@ const createInviteSchema = z.object({
 export const createInviteLink = onCall({ region: FUNCTIONS_REGION, enforceAppCheck: true }, async (request) => {
     const uid = requireAuth(request);
     const input = parseInput(createInviteSchema, request.data);
-    const db = getFirestore();
+    const db = getDb();
     const convRef = db.collection('conversations').doc(input.conversationId);
     const memberSnap = await convRef.collection('members').doc(uid).get();
     if (!memberSnap.exists || !['owner', 'admin'].includes(String(memberSnap.data()?.role))) {
@@ -415,7 +416,7 @@ const revokeInviteSchema = z.object({
 export const revokeInviteLink = onCall({ region: FUNCTIONS_REGION, enforceAppCheck: true }, async (request) => {
     const uid = requireAuth(request);
     const input = parseInput(revokeInviteSchema, request.data);
-    const db = getFirestore();
+    const db = getDb();
     const convRef = db.collection('conversations').doc(input.conversationId);
     const memberSnap = await convRef.collection('members').doc(uid).get();
     if (!memberSnap.exists || !['owner', 'admin'].includes(String(memberSnap.data()?.role))) {
@@ -431,7 +432,7 @@ const inviteCodeSchema = z.object({
 export const previewInvite = onCall({ region: FUNCTIONS_REGION, enforceAppCheck: true }, async (request) => {
     requireAuth(request);
     const input = parseInput(inviteCodeSchema, request.data);
-    const db = getFirestore();
+    const db = getDb();
     const inviteSnap = await db.collection('groupInvites').doc(input.code).get();
     if (!inviteSnap.exists) {
         throw new HttpsError('not-found', 'Invite link not found.');
@@ -458,7 +459,7 @@ export const previewInvite = onCall({ region: FUNCTIONS_REGION, enforceAppCheck:
 export const joinGroupByInvite = onCall({ region: FUNCTIONS_REGION, enforceAppCheck: true }, async (request) => {
     const uid = requireVerifiedEmailOrProvider(request);
     const input = parseInput(inviteCodeSchema, request.data);
-    const db = getFirestore();
+    const db = getDb();
     const inviteRef = db.collection('groupInvites').doc(input.code);
     const result = await db.runTransaction(async (tx) => {
         const inviteSnap = await tx.get(inviteRef);
@@ -532,7 +533,7 @@ const resolveJoinSchema = z.object({
 export const resolveJoinRequest = onCall({ region: FUNCTIONS_REGION, enforceAppCheck: true }, async (request) => {
     const callerUid = requireAuth(request);
     const input = parseInput(resolveJoinSchema, request.data);
-    const db = getFirestore();
+    const db = getDb();
     const convRef = db.collection('conversations').doc(input.conversationId);
     const callerSnap = await convRef.collection('members').doc(callerUid).get();
     if (!callerSnap.exists || !['owner', 'admin'].includes(String(callerSnap.data()?.role))) {

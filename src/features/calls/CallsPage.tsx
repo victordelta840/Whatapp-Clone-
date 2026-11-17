@@ -6,6 +6,7 @@ import { PAGINATION } from '@/config/constants';
 import { refs } from '@/config/refs';
 import { en } from '@/i18n';
 import { useAuthStore } from '@/features/auth';
+import { NewChatModal } from '@/features/conversations';
 import { fetchUserSummary, type HydratedUserSummary } from '@/features/profile';
 import type { CallDoc } from '@/types';
 import { startOutgoingCall } from './useCallSession';
@@ -15,6 +16,7 @@ export const CallsPage: React.FC = () => {
   const [calls, setCalls] = useState<Array<CallDoc & { id: string }>>([]);
   const [profiles, setProfiles] = useState<Record<string, HydratedUserSummary>>({});
   const [loading, setLoading] = useState(Boolean(uid));
+  const [newChatOpen, setNewChatOpen] = useState(false);
 
   useEffect(() => {
     if (!uid) {
@@ -130,6 +132,17 @@ export const CallsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      <button
+        type="button"
+        onClick={() => setNewChatOpen(true)}
+        aria-label="Start a call"
+        className="fixed bottom-20 end-4 z-30 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand text-white shadow-lg transition-transform hover:bg-brand-hover active:scale-95 md:hidden"
+      >
+        <Phone className="h-6 w-6" aria-hidden="true" />
+      </button>
+
+      <NewChatModal open={newChatOpen} onOpenChange={setNewChatOpen} />
     </div>
   );
 };

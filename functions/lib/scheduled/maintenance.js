@@ -1,9 +1,10 @@
-import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { FUNCTIONS_REGION, WINDOWS } from '../lib/constants.js';
+import { getDb } from '../lib/db.js';
 export const expireStatuses = onSchedule({ schedule: 'every 1 hours', region: FUNCTIONS_REGION }, async () => {
-    const db = getFirestore();
+    const db = getDb();
     const bucket = getStorage().bucket();
     const now = Timestamp.now();
     const expiredSnap = await db
@@ -20,7 +21,7 @@ export const expireStatuses = onSchedule({ schedule: 'every 1 hours', region: FU
     }
 });
 export const sweepStaleCalls = onSchedule({ schedule: 'every 2 minutes', region: FUNCTIONS_REGION }, async () => {
-    const db = getFirestore();
+    const db = getDb();
     const cutoff = Timestamp.fromMillis(Date.now() - WINDOWS.CALL_STALE_MS);
     const staleSnap = await db
         .collection('calls')
@@ -41,7 +42,7 @@ export const sweepStaleCalls = onSchedule({ schedule: 'every 2 minutes', region:
         await batch.commit();
 });
 export const cleanupOrphanUploads = onSchedule({ schedule: 'every 24 hours', region: FUNCTIONS_REGION }, async () => {
-    const db = getFirestore();
+    const db = getDb();
     const bucket = getStorage().bucket();
     const [files] = await bucket.getFiles({ prefix: 'chatMedia/', maxResults: 300 });
     const cutoffMs = Date.now() - WINDOWS.ORPHAN_UPLOAD_MS;
@@ -68,7 +69,7 @@ export const cleanupOrphanUploads = onSchedule({ schedule: 'every 24 hours', reg
     }
 });
 export const cleanupDevices = onSchedule({ schedule: 'every 24 hours', region: FUNCTIONS_REGION }, async () => {
-    const db = getFirestore();
+    const db = getDb();
     const cutoff = Timestamp.fromMillis(Date.now() - WINDOWS.DEVICE_STALE_MS);
     const staleDevices = await db
         .collectionGroup('devices')
@@ -95,7 +96,7 @@ export const cleanupExports = onSchedule({ schedule: 'every 1 hours', region: FU
     }
 });
 export const cleanupRateLimits = onSchedule({ schedule: 'every 24 hours', region: FUNCTIONS_REGION }, async () => {
-    const db = getFirestore();
+    const db = getDb();
     const now = Timestamp.now();
     const expired = await db
         .collection('rateLimits')

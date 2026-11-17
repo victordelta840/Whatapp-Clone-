@@ -1,9 +1,10 @@
 import { createHmac } from 'node:crypto';
-import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { onCall } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import { z } from 'zod';
 import { FUNCTIONS_REGION, LIMITS, RATE_LIMITS, WINDOWS } from '../lib/constants.js';
+import { getDb } from '../lib/db.js';
 import { parseInput, requireVerifiedEmailOrProvider } from '../lib/errors.js';
 import { enforceRateLimit } from '../lib/rateLimit.js';
 
@@ -40,7 +41,7 @@ export const createStatus = onCall(
       RATE_LIMITS.CREATE_STATUS.windowSec,
     );
 
-    const db = getFirestore();
+    const db = getDb();
     const userRef = db.collection('users').doc(uid);
 
     const [settingsSnap, contactsSnap] = await Promise.all([
@@ -132,7 +133,7 @@ export const discoverContacts = onCall(
     );
 
     const pepper = phoneHashPepper.value() || 'dev-ephemeral-pepper';
-    const db = getFirestore();
+    const db = getDb();
     const matches: Array<{ uid: string; displayName: string; username: string | null }> = [];
     const seenUids = new Set<string>();
 

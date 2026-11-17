@@ -1,9 +1,10 @@
 import { createHmac } from 'node:crypto';
-import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { onCall } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import { z } from 'zod';
 import { FUNCTIONS_REGION, LIMITS, RATE_LIMITS, WINDOWS } from '../lib/constants.js';
+import { getDb } from '../lib/db.js';
 import { parseInput, requireVerifiedEmailOrProvider } from '../lib/errors.js';
 import { enforceRateLimit } from '../lib/rateLimit.js';
 const phoneHashPepper = defineSecret('PHONE_HASH_PEPPER');
@@ -29,7 +30,7 @@ export const createStatus = onCall({ region: FUNCTIONS_REGION, enforceAppCheck: 
     const uid = requireVerifiedEmailOrProvider(request);
     const input = parseInput(createStatusSchema, request.data);
     await enforceRateLimit(uid, 'createStatus', RATE_LIMITS.CREATE_STATUS.limit, RATE_LIMITS.CREATE_STATUS.windowSec);
-    const db = getFirestore();
+    const db = getDb();
     const userRef = db.collection('users').doc(uid);
     const [settingsSnap, contactsSnap] = await Promise.all([
         userRef.collection('private').doc('settings').get(),
@@ -102,7 +103,7 @@ export const discoverContacts = onCall({
     const input = parseInput(discoverSchema, request.data);
     await enforceRateLimit(callerUid, 'discoverContacts', RATE_LIMITS.DISCOVER_CONTACTS.limit, RATE_LIMITS.DISCOVER_CONTACTS.windowSec);
     const pepper = phoneHashPepper.value() || 'dev-ephemeral-pepper';
-    const db = getFirestore();
+    const db = getDb();
     const matches = [];
     const seenUids = new Set();
     // Never persist the uploaded phone number list

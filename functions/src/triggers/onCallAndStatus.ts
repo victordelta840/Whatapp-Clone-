@@ -1,17 +1,18 @@
 import { randomUUID } from 'node:crypto';
-import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { onObjectFinalized } from 'firebase-functions/v2/storage';
 import { defineSecret } from 'firebase-functions/params';
 import { FUNCTIONS_REGION } from '../lib/constants.js';
+import { FIRESTORE_DATABASE_ID, getDb } from '../lib/db.js';
 import { sendPushToUser } from '../lib/fcm.js';
 import { hashE164Phone } from '../callable/statusAndContacts.js';
 
 const phoneHashPepper = defineSecret('PHONE_HASH_PEPPER');
 
 export const onCallCreated = onDocumentCreated(
-  { region: FUNCTIONS_REGION, document: 'calls/{callId}' },
+  { region: FUNCTIONS_REGION, database: FIRESTORE_DATABASE_ID, document: 'calls/{callId}' },
   async (event) => {
     const snap = event.data;
     if (!snap) return;
@@ -24,7 +25,7 @@ export const onCallCreated = onDocumentCreated(
     };
     if (call.state !== 'ringing') return;
 
-    const db = getFirestore();
+    const db = getDb();
     const callerSnap = await db.collection('users').doc(call.callerId).get();
     const callerName = (callerSnap.data()?.displayName as string) ?? 'Someone';
 
@@ -47,7 +48,7 @@ export const onCallCreated = onDocumentCreated(
 );
 
 export const onCallUpdated = onDocumentUpdated(
-  { region: FUNCTIONS_REGION, document: 'calls/{callId}' },
+  { region: FUNCTIONS_REGION, database: FIRESTORE_DATABASE_ID, document: 'calls/{callId}' },
   async (event) => {
     const before = event.data?.before.data() as { state?: string } | undefined;
     const after = event.data?.after.data() as
@@ -67,7 +68,7 @@ export const onCallUpdated = onDocumentUpdated(
     const terminalStates = new Set(['declined', 'busy', 'cancelled', 'missed', 'ended', 'failed']);
     if (!after.state || !terminalStates.has(after.state)) return;
 
-    const db = getFirestore();
+    const db = getDb();
     const { callId } = event.params;
 
     if (after.answeredAt && after.endedAt && after.durationSec == null) {
@@ -158,9 +159,9 @@ export const onCallUpdated = onDocumentUpdated(
 );
 
 export const onStatusViewCreated = onDocumentCreated(
-  { region: FUNCTIONS_REGION, document: 'statuses/{sid}/views/{viewerUid}' },
+  { region: FUNCTIONS_REGION, database: FIRESTORE_DATABASE_ID, document: 'statuses/{sid}/views/{viewerUid}' },
   async (event) => {
-    const db = getFirestore();
+    const db = getDb();
     await db
       .collection('statuses')
       .doc(event.params.sid)
@@ -170,10 +171,10 @@ export const onStatusViewCreated = onDocumentCreated(
 );
 
 export const onBlockCreated = onDocumentCreated(
-  { region: FUNCTIONS_REGION, document: 'users/{uid}/blocks/{blockedUid}' },
+  { region: FUNCTIONS_REGION, database: FIRESTORE_DATABASE_ID, document: 'users/{uid}/blocks/{blockedUid}' },
   async (event) => {
     const { uid, blockedUid } = event.params;
-    const db = getFirestore();
+    const db = getDb();
 
     // Remove each party from the other's active status audiences
     const [aStatuses, bStatuses] = await Promise.all([
@@ -193,7 +194,7 @@ export const onBlockCreated = onDocumentCreated(
 );
 
 export const onReportCreated = onDocumentCreated(
-  { region: FUNCTIONS_REGION, document: 'reports/{rid}' },
+  { region: FUNCTIONS_REGION, database: FIRESTORE_DATABASE_ID, document: 'reports/{rid}' },
   async (event) => {
     const snap = event.data;
     if (!snap) return;
@@ -204,7 +205,7 @@ export const onReportCreated = onDocumentCreated(
     };
     if (!report.conversationId) return;
 
-    const db = getFirestore();
+    const db = getDb();
     const recentMsgs = await db
       .collection('conversations')
       .doc(report.conversationId)
@@ -228,6 +229,7 @@ export const onReportCreated = onDocumentCreated(
 export const onSettingsUpdated = onDocumentUpdated(
   {
     region: FUNCTIONS_REGION,
+    database: FIRESTORE_DATABASE_ID,
     document: 'users/{uid}/private/settings',
     secrets: [phoneHashPepper],
   },
@@ -237,7 +239,7 @@ export const onSettingsUpdated = onDocumentUpdated(
     const afterFindable = event.data?.after.data()?.privacy?.findableByPhone as boolean | undefined;
     if (beforeFindable === afterFindable) return;
 
-    const db = getFirestore();
+    const db = getDb();
     const accountSnap = await db.collection('users').doc(uid).collection('private').doc('account').get();
     const phone = accountSnap.data()?.phoneNumber as string | null | undefined;
     if (!phone) return;

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import type { ConfirmationResult, RecaptchaVerifier } from 'firebase/auth';
 import { getDownloadURL, ref } from 'firebase/storage';
 import { CheckCircle2, Download, LogOut, ShieldAlert, Smartphone, Trash2 } from 'lucide-react';
-import { Button, Dialog, Input, toast } from '@/components/ui';
+import { Button, Dialog, Input, PWAInstallCard, toast } from '@/components/ui';
 import { requireFirebaseHandles } from '@/config/firebase';
 import { mapFirebaseError } from '@/lib/errors';
 import {
@@ -75,7 +75,14 @@ export const AccountSettingsPage: React.FC = () => {
     try {
       const { storage } = requireFirebaseHandles();
       const url = await getDownloadURL(ref(storage, exportPath));
-      window.open(url, '_blank', 'noopener,noreferrer');
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.target = '_blank';
+      anchor.rel = 'noopener noreferrer';
+      anchor.download = 'whatsapp-account-export.json';
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
     } catch (err) {
       toast.error(mapFirebaseError(err).userMessage);
     }
@@ -156,6 +163,8 @@ export const AccountSettingsPage: React.FC = () => {
           Your WhatsApp account is secured solely by your phone number and SMS one-time verification codes.
         </p>
       </div>
+
+      <PWAInstallCard />
 
       <div className="rounded-xl border border-border bg-surface-raised p-4 space-y-3">
         <h3 className="text-sm font-semibold text-text-primary">Sessions &amp; data</h3>

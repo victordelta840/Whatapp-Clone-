@@ -14,7 +14,8 @@
    firebase functions:secrets:set TURN_SHARED_SECRET
    firebase functions:secrets:set TURN_URLS
    ```
-3. **Named Firestore Database**: The AI Studio provisioned project uses named database `ai-studio-a98db9ab-2051-4bc7-8254-906ad7ca81d5` in `firebase-applet-config.json` (used automatically by the web SDK). If deploying Cloud Functions against this named database instead of `(default)`, update `getFirestore()` calls in `functions/src/**` to pass the database ID (e.g., `getFirestore('ai-studio-a98db9ab-2051-4bc7-8254-906ad7ca81d5')`) and target that database in Firestore triggers.
+3. **Named Firestore Database**: The AI Studio provisioned project uses named database `ai-studio-a98db9ab-2051-4bc7-8254-906ad7ca81d5` in `firebase-applet-config.json`. Both the frontend SDK and `functions/src/lib/db.ts` (`FIRESTORE_DATABASE_ID`) target this named database automatically.
+4. For complete Android PWA / `.apk` and real Phone OTP + Push setup instructions, see `docs/ANDROID_WHATSAPP_SETUP.md`.
 
 ## 2. Build & Deploy Steps
 ```bash

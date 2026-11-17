@@ -1,9 +1,10 @@
 import { getAuth } from 'firebase-admin/auth';
-import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 import { FUNCTIONS_REGION } from '../lib/constants.js';
+import { getDb } from '../lib/db.js';
 import { parseInput, requireAuth } from '../lib/errors.js';
 const deleteAccountSchema = z.object({
     confirmation: z.literal('DELETE MY ACCOUNT'),
@@ -15,7 +16,7 @@ export const deleteMyAccount = onCall({
 }, async (request) => {
     const uid = requireAuth(request);
     parseInput(deleteAccountSchema, request.data);
-    const db = getFirestore();
+    const db = getDb();
     const bucket = getStorage().bucket();
     const userRef = db.collection('users').doc(uid);
     const userSnap = await userRef.get();

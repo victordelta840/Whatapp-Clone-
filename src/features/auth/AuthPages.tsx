@@ -5,7 +5,7 @@ import { ArrowLeft, CheckCircle2, Lock, MessageSquare, RefreshCw, ShieldAlert } 
 import { WINDOWS } from '@/config/constants';
 import { en } from '@/i18n';
 import { mapFirebaseError } from '@/lib/errors';
-import { Button, WhatsAppLogo, toast } from '@/components/ui';
+import { Button, PWAInstallCard, WhatsAppLogo, toast } from '@/components/ui';
 import {
   confirmPhoneCode,
   createPhoneRecaptcha,
@@ -515,6 +515,10 @@ export const AuthPages: React.FC<{ mode?: 'signin' }> = () => {
             Your chats and calls are protected in transit (TLS) and at rest by Google Cloud infrastructure.
           </span>
         </div>
+      </div>
+
+      <div className="relative z-10 mt-4">
+        <PWAInstallCard compact />
       </div>
     </div>
   );

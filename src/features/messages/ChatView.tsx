@@ -210,7 +210,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
   const composerDisabled = !verified || adminsOnlyBlocked;
   const disabledReason = !verified
-    ? 'Verify your email address to send messages.'
+    ? 'Verify your phone number to send messages.'
     : adminsOnlyBlocked
       ? 'Only group admins can send messages in this group.'
       : undefined;

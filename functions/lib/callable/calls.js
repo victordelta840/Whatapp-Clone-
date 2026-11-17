@@ -1,9 +1,10 @@
 import { createHmac } from 'node:crypto';
-import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import { z } from 'zod';
 import { FUNCTIONS_REGION, RATE_LIMITS } from '../lib/constants.js';
+import { getDb } from '../lib/db.js';
 import { parseInput, requireAuth, requireVerifiedEmailOrProvider } from '../lib/errors.js';
 import { enforceRateLimit } from '../lib/rateLimit.js';
 const turnSharedSecret = defineSecret('TURN_SHARED_SECRET');
@@ -20,7 +21,7 @@ export const startCall = onCall({ region: FUNCTIONS_REGION, enforceAppCheck: tru
         throw new HttpsError('invalid-argument', 'Cannot call yourself.');
     }
     await enforceRateLimit(callerUid, 'startCall', RATE_LIMITS.START_CALL.limit, RATE_LIMITS.START_CALL.windowSec);
-    const db = getFirestore();
+    const db = getDb();
     const [convSnap, calleeBlockSnap, callerBlockSnap, activeCallsSnap] = await Promise.all([
         db.collection('conversations').doc(input.conversationId).get(),
         db.collection('users').doc(input.calleeId).collection('blocks').doc(callerUid).get(),
@@ -80,7 +81,7 @@ export const getIceServers = onCall({
         if (!input.callId) {
             throw new HttpsError('invalid-argument', 'callId is required for call ICE servers.');
         }
-        const callSnap = await getFirestore().collection('calls').doc(input.callId).get();
+        const callSnap = await getDb().collection('calls').doc(input.callId).get();
         if (!callSnap.exists) {
             throw new HttpsError('not-found', 'Call not found.');
         }

@@ -1,5 +1,6 @@
-import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { HttpsError } from 'firebase-functions/v2/https';
+import { getDb } from './db.js';
 
 export async function enforceRateLimit(
   uid: string,
@@ -7,7 +8,7 @@ export async function enforceRateLimit(
   limit: number,
   windowSec: number,
 ): Promise<void> {
-  const db = getFirestore();
+  const db = getDb();
   const key = `${uid}_${bucket}`;
   const ref = db.collection('rateLimits').doc(key);
   const nowMs = Date.now();

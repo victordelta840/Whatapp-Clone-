@@ -1,7 +1,8 @@
-import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 import { FUNCTIONS_REGION, RATE_LIMITS } from '../lib/constants.js';
+import { getDb } from '../lib/db.js';
 import { parseInput, requireAuth } from '../lib/errors.js';
 import { enforceRateLimit } from '../lib/rateLimit.js';
 
@@ -26,7 +27,7 @@ export const updateUsername = onCall(
       RATE_LIMITS.UPDATE_USERNAME.windowSec,
     );
 
-    const db = getFirestore();
+    const db = getDb();
     const userRef = db.collection('users').doc(uid);
 
     await db.runTransaction(async (tx) => {

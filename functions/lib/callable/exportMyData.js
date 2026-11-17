@@ -1,15 +1,16 @@
 import { randomUUID } from 'node:crypto';
-import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { onCall } from 'firebase-functions/v2/https';
 import JSZip from 'jszip';
 import { FUNCTIONS_REGION, RATE_LIMITS, WINDOWS } from '../lib/constants.js';
+import { getDb } from '../lib/db.js';
 import { requireAuth } from '../lib/errors.js';
 import { enforceRateLimit } from '../lib/rateLimit.js';
 export const exportMyData = onCall({ region: FUNCTIONS_REGION, enforceAppCheck: true }, async (request) => {
     const uid = requireAuth(request);
     await enforceRateLimit(uid, 'exportMyData', RATE_LIMITS.EXPORT_DATA.limit, RATE_LIMITS.EXPORT_DATA.windowSec);
-    const db = getFirestore();
+    const db = getDb();
     const userRef = db.collection('users').doc(uid);
     const [profileSnap, accountSnap, settingsSnap, contactsSnap, blocksSnap, convsSnap] = await Promise.all([
         userRef.get(),

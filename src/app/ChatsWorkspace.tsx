@@ -43,7 +43,8 @@ export const AuthenticatedShell: React.FC<{
   const { totalUnreadCount } = useConversations();
   const { unreadCount: unreadNotifications } = useNotificationsCenter();
   const { updateReady, applyUpdate } = useServiceWorkerUpdate();
-  const { canPromptInstall, showIosHint, triggerInstall, dismiss } = usePWAInstall();
+  const { canPromptInstall, showAndroidManualHint, showIosHint, triggerInstall, dismiss } =
+    usePWAInstall();
 
   useEffect(() => {
     updateAppBadgeCount(totalUnreadCount);
@@ -69,7 +70,7 @@ export const AuthenticatedShell: React.FC<{
       {canPromptInstall && (
         <Banner
           variant="info"
-          message="Install WhatsApp on your device for faster access and offline support."
+          message="Install WhatsApp on your Android home screen for full-screen mode and offline chat cache."
           action={
             <div className="flex items-center gap-2">
               <Button size="sm" leftIcon={<Download className="h-3.5 w-3.5" />} onClick={() => void triggerInstall()}>
@@ -79,6 +80,17 @@ export const AuthenticatedShell: React.FC<{
                 Dismiss
               </Button>
             </div>
+          }
+        />
+      )}
+      {showAndroidManualHint && (
+        <Banner
+          variant="info"
+          message="On Android Chrome, open the ⋮ menu and tap Install app to add WhatsApp to your launcher."
+          action={
+            <Button size="sm" variant="ghost" onClick={dismiss}>
+              Dismiss
+            </Button>
           }
         />
       )}

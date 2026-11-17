@@ -62,7 +62,7 @@ export const NewChatModal: React.FC<NewChatModalProps> = ({ open, onOpenChange }
         open={open}
         onOpenChange={onOpenChange}
         title="Start a conversation"
-        description="Choose a contact or find someone by username, email, or phone."
+        description="Choose a contact or find someone by @username or phone number."
         size="md"
       >
         <div className="space-y-4">
@@ -89,7 +89,7 @@ export const NewChatModal: React.FC<NewChatModalProps> = ({ open, onOpenChange }
               <div className="p-6">
                 <EmptyState
                   title="No saved contacts"
-                  description="Use Find user to look up someone by @username, email, or phone."
+                  description="Use Find user to look up someone by @username or phone number."
                   action={
                     <Button size="sm" onClick={() => setDiscoveryOpen(true)}>
                       Find people

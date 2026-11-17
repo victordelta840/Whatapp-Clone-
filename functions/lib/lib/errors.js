@@ -11,7 +11,7 @@ export function requireVerifiedEmailOrProvider(request) {
     const provider = token?.firebase?.sign_in_provider;
     const verified = token?.email_verified === true;
     if (provider !== 'google.com' && provider !== 'phone' && !verified) {
-        throw new HttpsError('permission-denied', 'Verify your email address before performing this action.');
+        throw new HttpsError('permission-denied', 'Verify your phone number before performing this action.');
     }
     return uid;
 }

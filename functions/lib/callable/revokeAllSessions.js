@@ -1,14 +1,15 @@
 import { getAuth } from 'firebase-admin/auth';
-import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import { onCall } from 'firebase-functions/v2/https';
 import { FUNCTIONS_REGION } from '../lib/constants.js';
+import { getDb } from '../lib/db.js';
 import { requireAuth } from '../lib/errors.js';
 import { enforceRateLimit } from '../lib/rateLimit.js';
 export const revokeAllSessions = onCall({ region: FUNCTIONS_REGION, enforceAppCheck: true }, async (request) => {
     const uid = requireAuth(request);
     await enforceRateLimit(uid, 'revokeAllSessions', 10, 3600);
     await getAuth().revokeRefreshTokens(uid);
-    const db = getFirestore();
+    const db = getDb();
     await db.collection('users').doc(uid).collection('private').doc('account').set({
         sessionsRevokedAt: FieldValue.serverTimestamp(),
     }, { merge: true });

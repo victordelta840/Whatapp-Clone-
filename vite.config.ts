@@ -26,6 +26,12 @@ export default defineConfig(() => {
           theme_color: '#00A884',
           background_color: '#EFEAE2',
           display: 'standalone',
+          orientation: 'portrait-primary',
+          prefer_related_applications: false,
+          categories: ['social', 'communication'],
+          launch_handler: {
+            client_mode: 'focus-existing',
+          },
           start_url: '/',
           scope: '/',
           icons: [
@@ -46,6 +52,29 @@ export default defineConfig(() => {
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',
+            },
+          ],
+          shortcuts: [
+            {
+              name: 'Chats',
+              short_name: 'Chats',
+              description: 'Open WhatsApp chats',
+              url: '/chats',
+              icons: [{ src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
+            },
+            {
+              name: 'Updates',
+              short_name: 'Updates',
+              description: 'View and post status updates',
+              url: '/status',
+              icons: [{ src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
+            },
+            {
+              name: 'Calls',
+              short_name: 'Calls',
+              description: 'View call history and start a call',
+              url: '/calls',
+              icons: [{ src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
             },
           ],
         },

@@ -1,10 +1,15 @@
-import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { createHmac } from 'node:crypto';
+import { FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
+import { defineSecret } from 'firebase-functions/params';
 import { onCall } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 import { FUNCTIONS_REGION, LIMITS, RATE_LIMITS } from '../lib/constants.js';
+import { getDb } from '../lib/db.js';
 import { parseInput, requireAuth } from '../lib/errors.js';
 import { enforceRateLimit } from '../lib/rateLimit.js';
+
+const phoneHashPepper = defineSecret('PHONE_HASH_PEPPER');
 
 const bootstrapSchema = z.object({
   displayName: z.string().trim().min(LIMITS.DISPLAY_NAME_MIN).max(LIMITS.DISPLAY_NAME_MAX).optional(),
@@ -39,7 +44,7 @@ export const defaultSettings = (locale = 'en') => ({
 });
 
 export const bootstrapProfile = onCall(
-  { region: FUNCTIONS_REGION, enforceAppCheck: true },
+  { region: FUNCTIONS_REGION, enforceAppCheck: true, secrets: [phoneHashPepper] },
   async (request) => {
     const uid = requireAuth(request);
     const input = parseInput(bootstrapSchema, request.data);
@@ -50,11 +55,11 @@ export const bootstrapProfile = onCall(
       RATE_LIMITS.BOOTSTRAP.windowSec,
     );
 
-    const db = getFirestore();
+    const db = getDb();
     const authUser = await getAuth().getUser(uid);
     const providers = authUser.providerData.map((p) => p.providerId);
     const resolvedName =
-      input.displayName || authUser.displayName?.trim() || 'Converse User';
+      input.displayName || authUser.displayName?.trim() || authUser.phoneNumber || 'WhatsApp User';
 
     const userRef = db.collection('users').doc(uid);
     const accountRef = userRef.collection('private').doc('account');
@@ -102,11 +107,21 @@ export const bootstrapProfile = onCall(
       });
       tx.set(aboutRef, {
         schemaVersion: 1,
-        text: 'Available on Converse',
+        text: 'Hey there! I am using WhatsApp.',
         updatedAt: FieldValue.serverTimestamp(),
       });
       return true;
     });
+
+    if (authUser.phoneNumber) {
+      const settingsSnap = await settingsRef.get();
+      const findableByPhone = settingsSnap.data()?.privacy?.findableByPhone !== false;
+      if (findableByPhone) {
+        const pepper = phoneHashPepper.value() || 'dev-ephemeral-pepper';
+        const hmac = createHmac('sha256', pepper).update(authUser.phoneNumber).digest('hex');
+        await db.collection('phoneIndex').doc(hmac).set({ schemaVersion: 1, uid }, { merge: true });
+      }
+    }
 
     return { ok: true, created };
   },

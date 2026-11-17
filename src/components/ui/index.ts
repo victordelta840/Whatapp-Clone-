@@ -24,3 +24,4 @@ export { SearchField, type SearchFieldProps } from './SearchField';
 export { EmojiPickerPopover } from './EmojiPickerPopover';
 export { MediaViewer, type MediaViewerItem, type MediaViewerProps } from './MediaViewer';
 export { WhatsAppLogo, type WhatsAppLogoProps } from './WhatsAppLogo';
+export { PWAInstallCard, type PWAInstallCardProps } from './PWAInstallButton';

@@ -1,7 +1,7 @@
-import { getFirestore } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
+import { getDb } from './db.js';
 export async function sendPushToUser(opts) {
-    const db = getFirestore();
+    const db = getDb();
     const userRef = db.collection('users').doc(opts.recipientUid);
     const [settingsSnap, chatStateSnap, devicesSnap] = await Promise.all([
         userRef.collection('private').doc('settings').get(),

@@ -1,8 +1,8 @@
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
 import { onCall } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 import { FUNCTIONS_REGION, RATE_LIMITS } from '../lib/constants.js';
+import { getDb } from '../lib/db.js';
 import { parseInput, requireAuth } from '../lib/errors.js';
 import { enforceRateLimit } from '../lib/rateLimit.js';
 
@@ -23,7 +23,7 @@ export const lookupUser = onCall(
       RATE_LIMITS.LOOKUP_USER.windowSec,
     );
 
-    const db = getFirestore();
+    const db = getDb();
     let targetUid: string | null = null;
 
     if (input.kind === 'username') {

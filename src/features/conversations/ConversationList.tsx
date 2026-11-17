@@ -391,6 +391,15 @@ export const ConversationList: React.FC<ConversationListProps> = ({
           setConfirmDeleteId(null);
         }}
       />
+
+      <button
+        type="button"
+        onClick={onNewChat}
+        aria-label={en.nav.newChat}
+        className="fixed bottom-20 end-4 z-30 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand text-white shadow-lg transition-transform hover:bg-brand-hover active:scale-95 md:hidden"
+      >
+        <MessageSquarePlus className="h-6 w-6" aria-hidden="true" />
+      </button>
     </div>
   );
 };
